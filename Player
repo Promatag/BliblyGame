@@ -1,0 +1,98 @@
+extends KinematicBody2D
+
+signal playerstop
+signal respawn
+var velocity  = Vector2(0,0)
+var coins = 0
+var startposition = Vector2(0,0)
+var speed = 350
+const JUMPFORCE = -900
+const GRAVITY = 33
+const AIRSPIKE = 850
+const LEAPFORCE = 100
+const GRAVITYLIMIT = AIRSPIKE + GRAVITY
+
+
+#player control
+func _physics_process(_delta):
+	#moves left and right, and idle
+	if Input.is_action_pressed("right") and not Input.is_action_pressed("cam_right"):
+		velocity.x = speed
+		$Sprite.play("walk")
+		$Sprite.flip_h = false
+	elif Input.is_action_pressed("left") and not Input.is_action_pressed("cam_left"): #elif checked only if "if" is not true
+		velocity.x = -speed
+		$Sprite.play("walk")
+		$Sprite.flip_h = true
+	else:
+		$Sprite.play("idle")
+
+	#plays air sprite
+	if not is_on_floor():
+		$Sprite.play("air")
+
+	#jump 
+	if Input.is_action_just_pressed("jump") and is_on_floor() and not Input.is_action_pressed("cam_up"):
+		velocity.y = JUMPFORCE
+	
+	#airspike and leapforce
+	if Input.is_action_just_pressed("duck") and not is_on_floor() and velocity.y < GRAVITYLIMIT: 
+		velocity.y = AIRSPIKE
+	if Input.is_action_pressed("right") and not is_on_floor():
+		velocity.x = speed + LEAPFORCE
+	if Input.is_action_pressed("left") and not is_on_floor():
+		velocity.x = -speed - LEAPFORCE
+		
+	#physics mechanics and line enterpolation
+	velocity.y = velocity.y + GRAVITY
+	velocity = move_and_slide(velocity, Vector2.UP)
+	velocity.x = lerp(velocity.x, 0, 0.2)
+
+#fall zones
+func _on_Start_FZ_body_entered(body):
+	emit_signal("respawn")
+func _on_High_FZ_body_entered(body):
+	emit_signal("respawn")
+
+#respawn + delay timer
+func _on_Blibly_respawn():
+	$Timer.start()
+func _on_Timer_timeout():
+	position = startposition
+	$Timer.stop()
+
+#player is sent back to checkpoint after death
+func _on_Enemy1_player_kill():
+	position = startposition
+
+#checkpoints
+func _on_CP1_body_entered(body):
+	startposition.x = 10
+	startposition.y = 205
+func _on_CP2_body_entered(body):
+	startposition.x = 1400
+	startposition.y = 425
+func _on_CP3_body_entered(body):
+	startposition.x = 2775
+	startposition.y = 178
+func _on_CP4_body_entered(body):
+	startposition.x = 4684
+	startposition.y = 384
+func _on_CP5_body_entered(body):
+	startposition.x = 5003
+	startposition.y = -906
+func _on_CP6_body_entered(body):
+	startposition.x = 2400
+	startposition.y = -900
+func _on_CP7_body_entered(body):
+	startposition.x = 640
+	startposition.y = -1000
+func _on_CP8_body_entered(body):
+	startposition.x = 4300 
+	startposition.y = -2350
+
+#camera limit
+func _on_CamLimit_body_entered(body):
+	$Camera2D.limit_bottom = -400
+func _on_CamLimit2_body_entered(body):
+	$Camera2D.limit_bottom = 742
